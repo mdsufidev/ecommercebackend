@@ -1,7 +1,6 @@
 package com.ecommerce.sufi.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -23,20 +22,24 @@ public class ProductController {
 
     // ==========================================
     // GET ALL PRODUCTS
-    // Public
+    // PUBLIC
     // ==========================================
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
+    public ResponseEntity<Page<Product>> getAllProducts(
+
+            @RequestParam(defaultValue = "0") int page,
+
+            @RequestParam(defaultValue = "10") int size) {
 
         return ResponseEntity.ok(
-                productService.getAllProducts()
+                productService.getAllProducts(page, size)
         );
     }
 
     // ==========================================
     // GET PRODUCT BY ID
-    // Public
+    // PUBLIC
     // ==========================================
 
     @GetMapping("/{id}")
@@ -106,9 +109,14 @@ public class ProductController {
 
         String email = authentication.getName();
 
-        productService.deleteProduct(id, email);
+        productService.deleteProduct(
+                id,
+                email
+        );
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 
     // ==========================================
