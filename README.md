@@ -1,56 +1,89 @@
-# 🛒 E-Commerce Backend API
+# E-Commerce Backend API
 
-A production-oriented **E-Commerce Backend REST API** built with **Java and Spring Boot**. The project focuses on clean backend architecture, JWT-based authentication, role-based authorization, product and category management, seller ownership, and an admin approval workflow.
+A RESTful e-commerce backend built with **Java 17, Spring Boot, Spring Security, JWT, Spring Data JPA, Hibernate, and MySQL**.
 
-> 🚧 This project is actively being developed. Cart, order, and payment modules are planned as the next stages of development.
+The project is designed as a role-based e-commerce backend with authentication, category management, product management, seller ownership, and administrator approval workflows.
 
-## ✨ Features
-
-### 🔐 Authentication & Authorization
+## 🚀 Features
 
 - User registration and login
-- JWT-based stateless authentication
-- Role-based authorization using Spring Security
-- `ROLE_ADMIN`, `ROLE_SELLER`, and user-level access
-- Protected API endpoints
-- Admin-only category management
-- Authenticated seller/product operations
-
-### 📂 Category Management
-
-- Create category
-- Get all categories
-- Get category by ID
-- Update category
-- Delete category
-- Category CRUD restricted to administrators
-
-### 📦 Product Management
-
-- Create products
-- Get all products
-- Get product by ID
-- Update products
-- Delete products
-- Product SKU management
-- Stock management
-- Product-to-category relationship
-- Product-to-seller relationship
-- Seller ownership checks
+- JWT-based authentication
+- Role-based authorization
+- Admin-only category CRUD operations
+- Product CRUD operations
+- Seller ownership for products
 - Admin product approval/rejection workflow
+- MySQL database integration
+- JPA/Hibernate entity relationships
+- RESTful API architecture
+- Request validation support
+- Maven project structure
 
-### 🔄 Product Approval Workflow
+## 🔐 Authentication & Authorization
+
+The API uses **JWT Bearer tokens** for stateless authentication.
+
+Supported roles include:
+
+- `ROLE_USER` — normal customer
+- `ROLE_SELLER` — seller/product owner
+- `ROLE_ADMIN` — administrator
+
+Send the JWT token with protected requests:
+
+```http
+Authorization: Bearer <your-jwt-token>
+```
+
+### Category permissions
+
+| Operation | Access |
+|---|---|
+| GET categories | Authenticated users |
+| POST category | Admin only |
+| PUT category | Admin only |
+| DELETE category | Admin only |
+
+### Product permissions
+
+| Operation | Access |
+|---|---|
+| GET products | Public |
+| POST product | Seller / Admin |
+| PUT product | Product owner / Admin |
+| DELETE product | Product owner / Admin |
+| PATCH approve | Admin only |
+| PATCH reject | Admin only |
+
+## 📡 API Endpoints
+
+### Authentication
 
 ```text
-Seller creates product
-        ↓
-     PENDING
-        ↓
-   Admin reviews
-     ↙       ↘
-APPROVED    REJECTED
-    ↓
-Available to customers
+POST /api/auth/register
+POST /api/auth/login
+```
+
+### Categories
+
+```text
+GET    /api/categories
+GET    /api/categories/{id}
+POST   /api/categories
+PUT    /api/categories/{id}
+DELETE /api/categories/{id}
+```
+
+### Products
+
+```text
+GET    /api/products
+GET    /api/products/{id}
+POST   /api/products
+PUT    /api/products/{id}
+DELETE /api/products/{id}
+PATCH  /api/products/{id}/approve
+PATCH  /api/products/{id}/reject
 ```
 
 ## 🏗️ Architecture
@@ -58,171 +91,78 @@ Available to customers
 The application follows a layered Spring Boot architecture:
 
 ```text
-Client / Postman
-       │
-       ▼
- REST Controller
-       │
-       ▼
-    Service
-       │
-       ▼
-  Repository
-       │
-       ▼
-     MySQL
+Controller
+    ↓
+Service
+    ↓
+Repository
+    ↓
+JPA / Hibernate
+    ↓
+MySQL
 ```
 
 Security flow:
 
 ```text
+Client
+  ↓
 Login
   ↓
-JWT generated
+JWT Token
   ↓
-Client sends Bearer Token
+Authorization: Bearer <token>
   ↓
 JwtAuthFilter
   ↓
-Token validation + role extraction
+Spring Security
   ↓
-Spring Security authorization
+Role / Permission Check
   ↓
 Controller
 ```
 
-## 🧩 Project Structure
+## 🗃️ Main Domain Model
 
 ```text
-src/main/java/com/ecommerce/sufi/
-│
-├── controller/
-│   ├── AuthController.java
-│   ├── CategoryController.java
-│   └── ProductController.java
-│
-├── dto/
-│   ├── LoginRequest.java
-│   ├── LoginResponse.java
-│   ├── RegisterRequest.java
-│   ├── CategoryRequest.java
-│   └── ProductRequest.java
-│
-├── model/
-│   ├── User.java
-│   ├── Role.java
-│   ├── RoleName.java
-│   ├── Category.java
-│   └── Product.java
-│
-├── repo/
-│   ├── UserRepository.java
-│   ├── RoleRepository.java
-│   ├── CategoryRepository.java
-│   └── ProductRepository.java
-│
-├── services/
-│   ├── UserService.java
-│   ├── UserServiceImpl.java
-│   ├── CategoryService.java
-│   ├── CategoryServiceImpl.java
-│   ├── ProductService.java
-│   └── ProductServiceImpl.java
-│
-└── security/
-    ├── SecurityConfig.java
-    ├── JwtService.java
-    └── JwtAuthFilter.java
+User
+ ├── Roles
+ └── Products (seller/owner)
+
+Category
+ └── Products
+
+Product
+ ├── Category
+ ├── Seller/User
+ └── Status
 ```
 
-## 🔑 API Endpoints
-
-### Authentication
-
-| Method | Endpoint | Access |
-|---|---|---|
-| `POST` | `/api/auth/register` | Public |
-| `POST` | `/api/auth/login` | Public |
-
-### Categories
-
-| Method | Endpoint | Access |
-|---|---|---|
-| `GET` | `/api/categories` | Authenticated |
-| `GET` | `/api/categories/{id}` | Authenticated |
-| `POST` | `/api/categories` | Admin |
-| `PUT` | `/api/categories/{id}` | Admin |
-| `DELETE` | `/api/categories/{id}` | Admin |
-
-### Products
-
-| Method | Endpoint | Access |
-|---|---|---|
-| `GET` | `/api/products` | Public |
-| `GET` | `/api/products/{id}` | Public |
-| `POST` | `/api/products` | Authenticated Seller/Admin |
-| `PUT` | `/api/products/{id}` | Owner/Admin |
-| `DELETE` | `/api/products/{id}` | Owner/Admin |
-| `PATCH` | `/api/products/{id}/approve` | Admin |
-| `PATCH` | `/api/products/{id}/reject` | Admin |
-
-### Planned Modules
+Product status supports the approval workflow, such as:
 
 ```text
-/api/cart
-/api/orders
-/api/payments
+PENDING → APPROVED
+PENDING → REJECTED
 ```
 
-These modules will be implemented in upcoming development stages.
-
-## 🗃️ Core Entity Relationships
-
-```text
-User ───────< User Roles
- │
- │ seller
- ▼
-Product >──── Category
-```
-
-A product belongs to a category and is associated with the seller who created it. Users can have one or more roles through the user-role relationship.
-
-## 🛡️ Security
-
-The API uses **Spring Security + JWT** for stateless authentication and authorization.
-
-Example protected request:
-
-```http
-Authorization: Bearer <JWT_TOKEN>
-```
-
-Administrative operations use role-based authorization such as:
-
-```java
-.hasRole("ADMIN")
-```
-
-The JWT contains the authenticated user's email and role information, which is used by the security filter and authorization layer.
-
-## 🧰 Tech Stack
+## 🛠️ Tech Stack
 
 | Technology | Purpose |
 |---|---|
-| Java | Backend programming language |
-| Spring Boot | Application framework |
+| Java 17 | Programming language |
+| Spring Boot 4.1.0 | Backend framework |
+| Spring Web MVC | REST API development |
 | Spring Security | Authentication & authorization |
-| JWT | Stateless authentication |
-| Spring Data JPA | Data access |
+| JJWT 0.12.6 | JWT generation and validation |
+| Spring Data JPA | Database access |
 | Hibernate | ORM |
 | MySQL | Relational database |
-| Maven | Dependency management & build |
-| Postman | REST API testing |
-| Git | Version control |
-| GitHub | Source code & collaboration |
+| Maven | Dependency/build management |
+| Lombok | Boilerplate reduction |
+| Postman | API testing |
+| Git & GitHub | Version control |
 
-## 🚀 Getting Started
+## ⚙️ Getting Started
 
 ### 1. Clone the repository
 
@@ -233,108 +173,148 @@ cd ecommercebackend
 
 ### 2. Configure MySQL
 
-Create a MySQL database and configure your local application settings.
+Create a MySQL database, for example:
 
-Example configuration:
+```sql
+CREATE DATABASE ecommerce;
+```
+
+Configure your database credentials and JWT properties in your Spring Boot configuration.
+
+Example:
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/ecommerce
-spring.datasource.username=YOUR_DB_USERNAME
-spring.datasource.password=YOUR_DB_PASSWORD
+spring.datasource.username=root
+spring.datasource.password=YOUR_PASSWORD
 
-jwt.secret=YOUR_JWT_SECRET
+jwt.secret=YOUR_LONG_SECRET_KEY
 jwt.expiration=86400000
 ```
 
-> ⚠️ Never commit real database passwords, JWT secrets, API keys, or other credentials to GitHub.
+> Do not commit real database passwords, JWT secrets, API keys, or other credentials to GitHub.
 
 ### 3. Run the application
 
-Using Maven:
-
-```bash
-./mvnw spring-boot:run
-```
-
-On Windows:
+Using Maven Wrapper on Windows:
 
 ```bash
 mvnw.cmd spring-boot:run
 ```
 
-The API will be available at:
+On Linux/macOS:
+
+```bash
+./mvnw spring-boot:run
+```
+
+The API runs by default at:
 
 ```text
 http://localhost:8080
 ```
 
-## 🧪 Testing with Postman
+## 🧪 Example Login Flow
 
-Recommended development flow:
+### Register
 
-```text
-Register User
-    ↓
-Login
-    ↓
-Receive JWT
-    ↓
-Send JWT in Authorization header
-    ↓
-Access protected APIs
+```http
+POST /api/auth/register
+Content-Type: application/json
 ```
 
-For protected requests, use:
-
-```text
-Authorization → Bearer Token → <your JWT>
+```json
+{
+  "name": "Muhammad Sufiyan",
+  "email": "sufi@example.com",
+  "password": "your-password",
+  "phone": "9876543210"
+}
 ```
 
-## 📌 Development Roadmap
+### Login
 
-- [x] User registration
-- [x] User login
-- [x] JWT authentication
-- [x] Role-based authorization
-- [x] Category CRUD
-- [x] Product CRUD
-- [x] Seller ownership
-- [x] Product approval/rejection
-- [ ] Cart module
-- [ ] Order module
-- [ ] Payment module
-- [ ] Password hashing with BCrypt
-- [ ] Global exception handling improvements
-- [ ] API documentation with Swagger/OpenAPI
-- [ ] Automated unit and integration tests
-- [ ] Docker support
-- [ ] CI/CD pipeline
+```http
+POST /api/auth/login
+Content-Type: application/json
+```
+
+After successful login, use the returned JWT token for protected endpoints:
+
+```http
+Authorization: Bearer <JWT_TOKEN>
+```
+
+## 📦 Example Product Request
+
+```json
+{
+  "name": "Samsung Galaxy S25",
+  "description": "Latest Samsung smartphone",
+  "price": 74999.00,
+  "stock": 25,
+  "sku": "SAM-S25-001",
+  "imageUrl": "https://example.com/s25.jpg",
+  "categoryId": 1
+}
+```
+
+## 📋 Project Status
+
+### Implemented
+
+- Authentication
+- JWT security
+- Role-based authorization
+- User roles
+- Category management
+- Product management
+- Product approval/rejection
+- Seller ownership
+
+### Planned
+
+- Shopping cart
+- Order management
+- Payment integration
+- Advanced product search/filtering
+- Pagination and sorting improvements
+- Automated unit/integration test coverage
+- API documentation with OpenAPI/Swagger
+
+## 🔒 Security Notes
+
+This project is intended for learning and development. Before using it in production, additional security hardening should be performed, including:
+
+- Password hashing with BCrypt/Argon2
+- Secure secret management using environment variables or a secret manager
+- Refresh-token strategy
+- Strong request validation
+- Global exception handling
+- Rate limiting
+- Production database configuration
+- HTTPS
 
 ## 🤝 Contributing
 
-Contributions are welcome!
+Contributions are welcome.
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Commit your changes
-5. Push the branch
-6. Open a Pull Request
-
-Please keep changes focused and include appropriate tests where possible.
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Test the changes.
+5. Submit a pull request.
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License**. See the `LICENSE` file for details.
 
 ## 👨‍💻 Author
 
 **Muhammad Sufiyan**
 
-Java Backend Developer | Spring Boot | REST APIs | MySQL
-
-- GitHub: https://github.com/mdsufidev
+GitHub: https://github.com/mdsufidev
 
 ---
 
-⭐ If you find this project useful, consider giving it a star and following the repository for future updates.
+⭐ If you find this project useful, consider giving it a star on GitHub.
