@@ -1,12 +1,13 @@
 package com.ecommerce.sufi.security;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import com.ecommerce.sufi.repo.UserRepository;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
@@ -18,9 +19,11 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
-    public JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(JwtService jwtService, UserRepository userRepository) {
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -44,21 +47,29 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (jwtService.isTokenValid(token)) {
 
             String email = jwtService.extractEmail(token);
+            var user = userRepository.findByEmail(email).orElse(null);
+            if (user == null || !user.isEnabled() || jwtService.extractAuthVersion(token) != user.getAuthVersion()) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+            List<String> roles = user.getRoles().stream().map(role -> role.getName().name()).toList();
+            List<SimpleGrantedAuthority> authorities = roles == null ? List.of() : roles.stream()
+                    .filter(role -> role.startsWith("ROLE_"))
+                    .map(SimpleGrantedAuthority::new)
+                    .toList();
 
-            // Get role from JWT
-            String role = jwtService.extractRole(token);
-
-            // Convert role into Spring Security authority
-            SimpleGrantedAuthority authority =
-                    new SimpleGrantedAuthority(role);
+            if (authorities.isEmpty()) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             email,
                             null,
-                            Collections.singletonList(authority)
+                            authorities
                     );
-            
+
 
             SecurityContextHolder
                     .getContext()

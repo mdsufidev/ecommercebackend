@@ -4,11 +4,26 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import java.math.BigDecimal;
 
 import com.ecommerce.sufi.dto.ProductRequest;
+import com.ecommerce.sufi.dto.ProductResponse;
+import com.ecommerce.sufi.dto.ProductPageResponse;
+import com.ecommerce.sufi.dto.ProductResponseMapper;
 import com.ecommerce.sufi.model.Product;
 import com.ecommerce.sufi.services.ProductService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/products")
@@ -26,15 +41,21 @@ public class ProductController {
     // ==========================================
 
     @GetMapping
-    public ResponseEntity<Page<Product>> getAllProducts(
+    public ResponseEntity<ProductPageResponse> getAllProducts(
 
             @RequestParam(defaultValue = "0") int page,
 
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
 
-        return ResponseEntity.ok(
-                productService.getAllProducts(page, size)
-        );
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(defaultValue = "false") boolean inStock,
+            @RequestParam(defaultValue = "newest") String sort) {
+
+        return ResponseEntity.ok(ProductPageResponse.from(productService.browseProducts(q, categoryId, minPrice,
+                maxPrice, inStock, sort, page, size).map(ProductResponseMapper::from)));
     }
 
     // ==========================================
@@ -43,11 +64,11 @@ public class ProductController {
     // ==========================================
 
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getProductById(
+    public ResponseEntity<ProductResponse> getProductById(
             @PathVariable Long id) {
 
         return ResponseEntity.ok(
-                productService.getProductById(id)
+                ProductResponseMapper.from(productService.getProductById(id))
         );
     }
 
@@ -57,8 +78,8 @@ public class ProductController {
     // ==========================================
 
     @PostMapping
-    public ResponseEntity<Product> createProduct(
-            @RequestBody ProductRequest request,
+    public ResponseEntity<ProductResponse> createProduct(
+            @Valid @RequestBody ProductRequest request,
             Authentication authentication) {
 
         String email = authentication.getName();
@@ -71,7 +92,7 @@ public class ProductController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(product);
+                .body(ProductResponseMapper.from(product));
     }
 
     // ==========================================
@@ -80,9 +101,9 @@ public class ProductController {
     // ==========================================
 
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(
+    public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id,
-            @RequestBody ProductRequest request,
+            @Valid @RequestBody ProductRequest request,
             Authentication authentication) {
 
         String email = authentication.getName();
@@ -94,7 +115,7 @@ public class ProductController {
                         email
                 );
 
-        return ResponseEntity.ok(product);
+        return ResponseEntity.ok(ProductResponseMapper.from(product));
     }
 
     // ==========================================
@@ -125,11 +146,11 @@ public class ProductController {
     // ==========================================
 
     @PatchMapping("/{id}/approve")
-    public ResponseEntity<Product> approveProduct(
+    public ResponseEntity<ProductResponse> approveProduct(
             @PathVariable Long id) {
 
         return ResponseEntity.ok(
-                productService.approveProduct(id)
+                ProductResponseMapper.from(productService.approveProduct(id))
         );
     }
 
@@ -139,11 +160,12 @@ public class ProductController {
     // ==========================================
 
     @PatchMapping("/{id}/reject")
-    public ResponseEntity<Product> rejectProduct(
+    public ResponseEntity<ProductResponse> rejectProduct(
             @PathVariable Long id) {
 
         return ResponseEntity.ok(
-                productService.rejectProduct(id)
+                ProductResponseMapper.from(productService.rejectProduct(id))
         );
     }
+
 }

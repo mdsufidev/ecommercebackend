@@ -1,6 +1,8 @@
 package com.ecommerce.sufi.security;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 
@@ -24,8 +26,7 @@ public class JwtService {
         this.expiration = expiration;
     }
 
-    // Email + Role
-    public String generateToken(String email, String role) {
+    public String generateToken(String email, Set<String> roles, int authVersion) {
 
         Date now = new Date();
 
@@ -34,7 +35,8 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(email)
-                .claim("role", role)
+                .claim("roles", roles)
+                .claim("authVersion", authVersion)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)
@@ -51,14 +53,20 @@ public class JwtService {
                 .getSubject();
     }
 
-    public String extractRole(String token) {
+    public List<String> extractRoles(String token) {
 
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
-                .get("role", String.class);
+                .get("roles", List.class);
+    }
+
+    public int extractAuthVersion(String token) {
+        Integer version = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token)
+                .getPayload().get("authVersion", Integer.class);
+        return version == null ? 0 : version;
     }
 
     public boolean isTokenValid(String token) {

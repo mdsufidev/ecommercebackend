@@ -34,6 +34,8 @@ public class ProductResponse {
 
     private String status;
 
+    private String rejectionReason;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
